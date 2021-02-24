@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/joho/godotenv"
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
@@ -26,10 +25,6 @@ func helloHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func lineHandler(w http.ResponseWriter, r *http.Request) {
-	err := godotenv.Load(".env")
-	if err != nil {
-		log.Print("cloud not read .env")
-	}
 	// BOTを初期化
 	bot, err := linebot.New(
 		os.Getenv("LINE_SECRET"),
