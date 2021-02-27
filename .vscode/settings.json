@@ -1,6 +1,0 @@
-{
-    "git.ignoreLimitWarning": true,
-    "go.testEnvVars": {
-        "SRC_ROOT": "${workspaceFolder}/server/",
-    },
-}
