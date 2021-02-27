@@ -10,7 +10,7 @@
             "cwd": "${workspaceFolder}",
             "env": {
                 "DB_HOST": "localhost",
-                "PORT": "8080",
+                "PORT": "8081",
             }
         }
     ]
