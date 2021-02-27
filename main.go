@@ -19,7 +19,7 @@ func main() {
 }
 
 func helloHandler(w http.ResponseWriter, r *http.Request) {
-	msg := "Hello World!!!!"
+	msg := "server is running"
 	fmt.Fprintf(w, msg)
 }
 
