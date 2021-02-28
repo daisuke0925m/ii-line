@@ -119,7 +119,6 @@ func LineHandler(w http.ResponseWriter, r *http.Request) {
 					log.Print(err)
 				}
 			}
-			// 他にもスタンプや画像、位置情報など色々受信可能
 		}
 	}
 }
