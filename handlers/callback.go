@@ -55,6 +55,11 @@ func fetchAPI(message string) (tickers, error) {
 	return tickers, nil
 }
 
+func parseReplyMsg(symbol string, date time.Time, open float64, high float64, low float64, close float64, volume int) (repMsg string, err error) {
+	repMsg = symbol + date.String() + strconv.FormatFloat(open, 'f', 0, 64) + strconv.FormatFloat(high, 'f', 0, 64) + strconv.FormatFloat(low, 'f', 0, 64) + strconv.FormatFloat(close, 'f', 0, 64) + strconv.Itoa(volume)
+	return repMsg, nil
+}
+
 func LineHandler(w http.ResponseWriter, r *http.Request) {
 	// BOTを初期化
 	bot, err := linebot.New(
@@ -82,14 +87,18 @@ func LineHandler(w http.ResponseWriter, r *http.Request) {
 			// メッセージがテキスト形式の場合
 			case *linebot.TextMessage:
 				tickers, err := fetchAPI(message.Text)
+				if err != nil {
+					_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+					if err != nil {
+						log.Print(err)
+					}
+				}
+
 				latestData := tickers.Daily[0]
-				replyMessage := latestData.Symbol +
-					latestData.Date.String() +
-					strconv.FormatFloat(latestData.Open, 'f', 0, 64) +
-					strconv.FormatFloat(latestData.High, 'f', 0, 64) +
-					strconv.FormatFloat(latestData.Low, 'f', 0, 64) +
-					strconv.FormatFloat(latestData.Close, 'f', 0, 64) +
-					strconv.Itoa(latestData.Volume)
+				replyMessage, err := parseReplyMsg(latestData.Symbol, latestData.Date, latestData.Open, latestData.High, latestData.Low, latestData.Close, latestData.Volume)
+				if err != nil {
+					log.Print(err)
+				}
 
 				if err != nil {
 					_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
