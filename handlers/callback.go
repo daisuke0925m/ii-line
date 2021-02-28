@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/line/line-bot-sdk-go/linebot"
@@ -56,7 +57,14 @@ func fetchAPI(message string) (tickers, error) {
 }
 
 func parseReplyMsg(symbol string, date time.Time, open float64, high float64, low float64, close float64, volume int) (repMsg string, err error) {
-	repMsg = symbol + date.String() + strconv.FormatFloat(open, 'f', 0, 64) + strconv.FormatFloat(high, 'f', 0, 64) + strconv.FormatFloat(low, 'f', 0, 64) + strconv.FormatFloat(close, 'f', 0, 64) + strconv.Itoa(volume)
+	parsedDate := strings.Split(date.String(), " ")[0]
+	repMsg = symbol + "\n" +
+		parsedDate + "\n" +
+		"open " + strconv.FormatFloat(open, 'f', 0, 64) + "\n" +
+		"high " + strconv.FormatFloat(high, 'f', 0, 64) + "\n" +
+		"low " + strconv.FormatFloat(low, 'f', 0, 64) + "\n" +
+		"close " + strconv.FormatFloat(close, 'f', 0, 64) + "\n" +
+		"volume " + strconv.Itoa(volume)
 	return repMsg, nil
 }
 
