@@ -192,7 +192,7 @@ func LineHandler(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 
-					latestData := tickers.Daily[0]
+					latestData := tickers.Daily[len(tickers.Daily)-1]
 					replyMessage, err := parseReplyMsg(latestData.Symbol, latestData.Date, latestData.Open, latestData.High, latestData.Low, latestData.Close, latestData.Volume)
 					if err != nil {
 						log.Print(err)
