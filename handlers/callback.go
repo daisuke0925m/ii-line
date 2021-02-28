@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -27,7 +28,58 @@ type tickers struct {
 	} `json:"daily"`
 }
 
-func fetchAPI(message string) (tickers, error) {
+type fgis struct {
+	Fgis []struct {
+		ID        int       `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		NowValue  int       `json:"now_value"`
+		NowText   string    `json:"now_text"`
+		PcValue   int       `json:"pc_value"`
+		PcText    string    `json:"pc_text"`
+		OneWValue int       `json:"one_w_value"`
+		OneWText  string    `json:"one_w_text"`
+		OneMValue int       `json:"one_m_value"`
+		OneMText  string    `json:"one_m_text"`
+		OneYValue int       `json:"one_y_value"`
+		OneYText  string    `json:"one_y_text"`
+	} `json:"fgis"`
+}
+
+func checkMsg(message string) bool {
+	re := regexp.MustCompile(`(?i)fgi`)
+	res := re.MatchString(message)
+	return res
+}
+
+func fetchFgi() (fgis, error) {
+
+	url := "https://api.index-indicators.com/fgi"
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return fgis{}, err
+	}
+
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return fgis{}, err
+	}
+
+	defer res.Body.Close()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return fgis{}, err
+	}
+
+	var fgis fgis
+	if err := json.Unmarshal(body, &fgis); err != nil {
+		log.Fatal(err)
+	}
+
+	return fgis, nil
+}
+func fetchTicker(message string) (tickers, error) {
 
 	url := "https://api.index-indicators.com/ticker?symbol=" + message
 
@@ -50,10 +102,16 @@ func fetchAPI(message string) (tickers, error) {
 
 	var tickers tickers
 	if err := json.Unmarshal(body, &tickers); err != nil {
-		log.Fatal(err)
+		return tickers, err
 	}
 
 	return tickers, nil
+}
+
+func parseReplyMsgFgi(date time.Time, text string, value int) (repMsg string, err error) {
+	parsedDate := strings.Split(date.String(), " ")[0]
+	repMsg = parsedDate + "\n" + "Fear and Greed Now" + "\n" + text + " " + strconv.Itoa(value)
+	return repMsg, nil
 }
 
 func parseReplyMsg(symbol string, date time.Time, open float64, high float64, low float64, close float64, volume int) (repMsg string, err error) {
@@ -94,29 +152,61 @@ func LineHandler(w http.ResponseWriter, r *http.Request) {
 			switch message := event.Message.(type) {
 			// メッセージがテキスト形式の場合
 			case *linebot.TextMessage:
-				tickers, err := fetchAPI(message.Text)
-				if err != nil {
-					_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+
+				// メッセージがFGI(fgi)の場合fgiのapiを叩く
+				if checkMsg(message.Text) {
+					fgis, err := fetchFgi()
+					if err != nil {
+						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+						if err != nil {
+							log.Print(err)
+						}
+					}
+
+					latestData := fgis.Fgis[0]
+					replyMessage, err := parseReplyMsgFgi(latestData.CreatedAt, latestData.NowText, latestData.NowValue)
 					if err != nil {
 						log.Print(err)
 					}
-				}
 
-				latestData := tickers.Daily[0]
-				replyMessage, err := parseReplyMsg(latestData.Symbol, latestData.Date, latestData.Open, latestData.High, latestData.Low, latestData.Close, latestData.Volume)
-				if err != nil {
-					log.Print(err)
-				}
-
-				if err != nil {
-					_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+					if err != nil {
+						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+						if err != nil {
+							log.Print(err)
+						}
+					}
+					_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(replyMessage)).Do()
 					if err != nil {
 						log.Print(err)
 					}
-				}
-				_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(replyMessage)).Do()
-				if err != nil {
-					log.Print(err)
+
+					// メッセージがsymbolの場合tickerのapiを叩く
+				} else {
+					tickers, err := fetchTicker(message.Text)
+					if err != nil {
+						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+						if err != nil {
+							log.Print(err)
+						}
+					}
+
+					latestData := tickers.Daily[0]
+					replyMessage, err := parseReplyMsg(latestData.Symbol, latestData.Date, latestData.Open, latestData.High, latestData.Low, latestData.Close, latestData.Volume)
+					if err != nil {
+						log.Print(err)
+					}
+
+					if err != nil {
+						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+						if err != nil {
+							log.Print(err)
+						}
+					}
+					_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(replyMessage)).Do()
+					if err != nil {
+						log.Print(err)
+					}
+
 				}
 			}
 		}
