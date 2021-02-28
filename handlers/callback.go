@@ -14,6 +14,8 @@ import (
 	"github.com/line/line-bot-sdk-go/linebot"
 )
 
+var errMsg = "お探しの銘柄名またはFGI(fgi)を入力してください。"
+
 type tickers struct {
 	Daily []struct {
 		ID        int       `json:"id"`
@@ -157,7 +159,7 @@ func LineHandler(w http.ResponseWriter, r *http.Request) {
 				if checkMsg(message.Text) {
 					fgis, err := fetchFgi()
 					if err != nil {
-						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(errMsg)).Do()
 						if err != nil {
 							log.Print(err)
 						}
@@ -170,7 +172,7 @@ func LineHandler(w http.ResponseWriter, r *http.Request) {
 					}
 
 					if err != nil {
-						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(errMsg)).Do()
 						if err != nil {
 							log.Print(err)
 						}
@@ -184,7 +186,7 @@ func LineHandler(w http.ResponseWriter, r *http.Request) {
 				} else {
 					tickers, err := fetchTicker(message.Text)
 					if err != nil {
-						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(errMsg)).Do()
 						if err != nil {
 							log.Print(err)
 						}
@@ -197,7 +199,7 @@ func LineHandler(w http.ResponseWriter, r *http.Request) {
 					}
 
 					if err != nil {
-						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(err.Error())).Do()
+						_, err = bot.ReplyMessage(event.ReplyToken, linebot.NewTextMessage(errMsg)).Do()
 						if err != nil {
 							log.Print(err)
 						}
